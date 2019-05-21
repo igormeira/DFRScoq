@@ -9,8 +9,8 @@ DFRScoq is a representation of DFRS in Coq. This repository also contains files 
     * Python
     * Python3
     * clang
-    * lib32z1-dev (If you are in Linux)
-    * wget (If you are in MacOS)
+    * lib32z1-dev (Linux)
+    * wget (MacOS)
     * srciror
     
 1. Run the samples to the VM example. See src/README.
