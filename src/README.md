@@ -18,7 +18,7 @@ Dependencies:
 Test cases are generated according to the following steps (for instance, considering the VM):
 - Open vm_samples.py (in [`examples/vm`](examples/vm))
 - Change the variable "samplesNumber" (line 121) to the desired number of samples call
-- Run vm_samples.py (python vm_samples.py) to generate raw test data
+- Run vm_samples.py (python vm_samples.py) to generate raw test data (performance data printed to the console)
 - Run vm_samples_csv.py (python vm_samples_csv.py) to generate formatted test data (files saved in /CSV)
 
 Additional dependencies:
