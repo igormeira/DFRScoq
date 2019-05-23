@@ -1,9 +1,0 @@
-Steps to create the csv files:
-
-0 - Remember to run: export OPAMROOT=~/opam-coq.YOUR-VERSION && eval `opam config env`
-1 - Run configure.sh. It compiles all coq files needed.
-2 - Open vm_samples.py. Change the variable "samplesNumber", at the end of code, to the number of samples you would like to run. This file is in examples/vm.
-3 - Run vm_samples.py. Use python to do that.
-4 - Two files must have been created. vm_samples.v and vm_samples_output.txt.
-5 - Run vm_samples.csv.py. This file is in examples/vm. Use python to run.
-6 - All the csv files can be found in examples/vm/CSV.
