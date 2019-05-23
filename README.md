@@ -1,22 +1,10 @@
 # DFRScoq
-DFRScoq is a representation of DFRS in Coq. This repository also contains files to running tests to a Vending Machine, written in Python, and files to performs mutations on tests, written in C and Java, using the SRCIROR project.  
 
-### Runnig DFRScoq:
+This project aims at providing a Coq characterisation for models of data-flow reactive systems, a class of embedded systems whose inputs and outputs are always available as signals. Input signals can be seen as data provided by sensors, whereas the output data are provided to system actuators. The Coq characterisation allows for a single framework for specifying, analysing and testing such systems. For a comprehensive explanation of DFRS models, we refer to:
 
-0. Need dependencies:
-    * Coq 8.8.1
-    * QuickChick
-    * Python
-    * Python3
-    * clang
-    * lib32z1-dev (Linux)
-    * wget (MacOS)
-    * srciror
-    
-1. Run the samples to the VM example. See src/README.
+- Modelling timed reactive systems from natural-language requirements ([link](https://doi.org/10.1007/s00165-016-0387-x))
 
-2. Run the mutator for VM example. See analyses/README.
-    
-### Own Analyses:
+## Repository structure
 
-Our own analyses can be found in analyses/VM_srciror/raw_testcases/analyses.ods.
+The directory [`src`](src) contains the *.v files related to the characterisation of DFRSs in Coq.<br>
+The directory [`analyses`](analyses) contains empirical data related to performance and mutant-based strength analyses.

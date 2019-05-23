@@ -25,8 +25,6 @@ Require Import e_dfrs.
 Require Import s2e_dfrs_fun_rules.
 
 Require Import vm_tests.
-Require Import npp_tests.
-Require Import pc_tests.
 
 Open Scope monad_scope.
 
@@ -374,27 +372,6 @@ Definition vm_possibilities := [(the_coin_sensor, [b false; b true]);
                                 (the_coffee_request_button, [b false; b true])].
 
 (*=============== END VM ================*)
-
-(*=============== NPP ================*)
-
-Definition npp_initial_state := npp_state.
-
-Definition npp_possibilities := [(the_reset_button, [b false; b true]);
-                                 (the_blockage_button, [b false; b true]);
-                                 (the_water_pressure, [i 0; i 10; i 9])].
-
-(*=============== END VM TRACE ================*)
-
-(*=============== PC ================*)
-
-Definition pc_initial_state := pc_state.
-
-Definition pc_possibilities := [(the_left_command, [b false; b true]);
-                                (the_left_priority_button, [b false; b true]);
-                                (the_right_command, [b false; b true]);
-                                (the_right_priority_button, [b false; b true])].
-
-(*=============== END PC ================*)
 
 (*
 
