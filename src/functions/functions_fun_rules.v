@@ -6,8 +6,8 @@ Import ListNotations.
 Require Import functions.
 Require Import variables.
 Require Import variables_fun_rules.
-Require Import state.
-Require Import state_fun_rules.
+Require Import states.
+Require Import states_fun_rules.
 Require Import fun_util.
 
 (* EXPRESSION *)

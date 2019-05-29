@@ -1,5 +1,5 @@
 Require Import variables.
-Require Import state.
+Require Import states.
 Require Import functions.
 Require Import s_dfrs.
 Require Import s_dfrs_fun_rules.

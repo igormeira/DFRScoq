@@ -6,8 +6,6 @@ Local Open Scope string.
 
 Require Import variables.
 Require Import variables_fun_ind_equiv.
-Require Import state.
-Require Import state_fun_ind_equiv.
 Require Import functions.
 Require Import functions_fun_ind_equiv.
 Require Import s_dfrs.

@@ -5,7 +5,6 @@ Require Import Bool.
 
 Require Import util.
 Require Import variables.
-Require Import state.
 Require Import functions.
 Require Import functions_fun_rules.
 Require Import trans_rel.
@@ -311,8 +310,7 @@ Fixpoint buildTR (toVisit visited : list STATE) (I Out T : list (VNAME * TYPE))
   (F : list (list FUNCTION)) (possibilities : list (VNAME * list VALUE))
   (num : nat) : list TRANS :=
   match toVisit, num with
-  | []    , 0    => []
-  | []    , S _  => []
+  | []    , _  => []
   | _ :: _, 0    => []
   | h :: t, S n' => let
                       tr1 := genTransitions h I Out T F possibilities

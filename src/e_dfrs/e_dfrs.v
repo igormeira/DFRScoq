@@ -5,7 +5,6 @@ Import ListNotations.
 Require Import util.
 Require Import fun_util.
 Require Import variables.
-Require Import state.
 Require Import functions.
 Require Import states.
 Require Import trans_rel.

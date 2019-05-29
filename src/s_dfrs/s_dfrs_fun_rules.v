@@ -2,8 +2,8 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 
 Require Import variables.
-Require Import state.
-Require Import state_fun_rules.
+Require Import states.
+Require Import states_fun_rules.
 Require Import functions.
 Require Import functions_fun_rules.
 

@@ -5,7 +5,7 @@ Import ListNotations.
 
 Require Import variables.
 Require Import variables_fun_rules.
-Require Import state.
+Require Import states.
 Require Import util.
 Require Import fun_util.
 

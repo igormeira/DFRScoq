@@ -6,8 +6,8 @@ Require Import Bool.
 Require Export util.
 Require Export fun_util.
 Require Export variables.
-Require Export state.
-Require Export state_fun_rules.
+Require Export states.
+Require Export states_fun_rules.
 Require Export functions.
 
 Local Open Scope string_scope.

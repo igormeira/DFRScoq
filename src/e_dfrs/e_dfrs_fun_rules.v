@@ -5,7 +5,6 @@ Require Import Bool.
 Require Import util.
 Require Import fun_util.
 Require Import variables.
-Require Import state.
 Require Import states.
 Require Import trans_rel_fun_rules.
 Require Import e_dfrs.

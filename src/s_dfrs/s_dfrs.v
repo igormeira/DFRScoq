@@ -2,7 +2,7 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 
 Require Import variables.
-Require Import state.
+Require Import states.
 Require Import functions.
 
 (* S_DFRS *)
