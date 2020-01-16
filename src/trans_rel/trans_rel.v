@@ -15,7 +15,6 @@ Local Open Scope string_scope.
 Inductive DELAY : Type :=
   | discrete : nat -> DELAY.
 
-(* TODO: Really necessary? *)
 Definition delayValue (d : DELAY) : nat :=
   match d with
   | discrete natural => natural
@@ -100,7 +99,6 @@ Definition well_typed_delay_transition (label : TRANS_LABEL)
         (fun (v v' : NAME)
           => string_dec v v')).
 
-(* ranDiscrete already tests if label is a delay *)
 Definition ranDiscrete (label : TRANS_LABEL) : Prop :=
   match label with
   | func _ => False

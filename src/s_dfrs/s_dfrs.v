@@ -14,7 +14,7 @@ Fixpoint check_function_entries
     | []     => True
     | h :: t => var_consistent_exp (fst (fst (fst h))) IO T
                 /\ var_consistent_exp (snd (fst (fst h))) T T
-                /\ well_typed_asgmts (snd (fst h)) OT
+                /\ well_typed_asgmts (snd (fst h)).(asgmts) OT
                 /\ check_function_entries t IO T OT
     end.
 

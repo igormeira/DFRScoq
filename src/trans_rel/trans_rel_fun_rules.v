@@ -14,9 +14,6 @@ Require Export trans_rel.
 
 Local Open Scope string_scope.
 
-
-
-(* TODO: Really necessary? *)
 Definition beq_delay (d1 d2 : DELAY) : bool :=
   if beq_nat (delayValue d1) (delayValue d2)
   then true
@@ -53,7 +50,6 @@ Definition bwell_typed_delay_transition (label : TRANS_LABEL)
     then true
     else false.
 
-(* ranDiscrete already tests if label is a delay *)
 Definition branDiscrete (label : TRANS_LABEL) : bool :=
   match label with
   | func _ => false

@@ -16,7 +16,7 @@ Fixpoint bcheck_function_entries
     | []     => true
     | h :: t => bvar_consistent_exp (fst (fst (fst h))) IO T
                 && bvar_consistent_exp (snd (fst (fst h))) T T
-                && bwell_typed_asgmts (snd (fst h)) OT
+                && bwell_typed_asgmts (snd (fst h)).(asgmts) OT
                 && bcheck_function_entries t IO T OT
     end.
 

@@ -150,37 +150,39 @@ Fixpoint is_valid_trans (trans : list TRANS) (sts : list STATE)
               /\
               well_typed_transition (snd (fst h.(STS))) I O T gcvar
               /\
-              ((ranFun (snd (fst h.(STS)))
-                /\ eq_state
+              (if branFun (snd (fst h.(STS)))
+               then eq_state
                     (nextState (fst3 h.(STS)) T
                       (match (functionTransition (snd (fst h.(STS)))) with
                        | Some a => fst a
                        | None   => default_asgmts
                        end))
-                    (snd h.(STS)))
-               \/
-               is_valid_trans t sts I O T gcvar)
+                    (snd h.(STS))
+               else is_valid_trans t sts I O T gcvar)
               /\
-              ((ranDel (snd (fst h.(STS)))
-               /\((ranDiscrete (snd (fst h.(STS)))
-                   /\((eq_state_elements
-                        (update_gc
-                          (nextState (fst3 h.(STS)) T
-                            (match (delayTransition (snd3 h.(STS))) with
-                             | Some a => snd a
-                             | None   => default_asgmts
-                             end)).(state)
-                          ((fst3 h.(STS)).(state))
-                          (match (delayTransition (snd3 h.(STS))) with
-                             | Some a => fst a
-                             | None   => discrete 0
-                             end))
-                        (snd h.(STS)).(state))
-                        (* UPDATE GC *)
-                     /\ is_valid_trans t sts I O T gcvar)
+              (if branDel (snd (fst h.(STS)))
+               then (if branDiscrete (snd (fst h.(STS)))
+                     then (if beq_state_elements
+                              (update_gc
+                                (nextState (fst3 h.(STS)) T
+                                  (match (delayTransition (snd3 h.(STS))) with
+                                   | Some a => snd a
+                                   | None   => default_asgmts
+                                   end)).(state)
+                                ((fst3 h.(STS)).(state))
+                                (match (delayTransition (snd3 h.(STS))) with
+                                   | Some a => fst a
+                                   | None   => discrete 0
+                                   end))
+                              (snd h.(STS)).(state)
+                              (* UPDATE GC *)
+                           then is_valid_trans t sts I O T gcvar
+                           else False
+                          )
+                     else is_valid_trans t sts I O T gcvar
                     )
-                  \/ is_valid_trans t sts I O T gcvar))
-               \/ is_valid_trans t sts I O T gcvar)
+               else is_valid_trans t sts I O T gcvar
+              )
   end.
 
 Definition ind_rules_e_dfrs (vars : DFRS_VARIABLES) (sts : DFRS_STATES)

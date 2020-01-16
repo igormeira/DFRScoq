@@ -12,6 +12,40 @@ Require Import states.
 Require Import s_dfrs.
 Require Import e_dfrs.
 
+(* The following hypotheses need to be properly formulated and proved
+   in order go guarantee that the functions defined here are sound:
+   they always yield elements whose corresponding well-formedness
+   properties hold. *)
+
+Hypothesis asgmts_valid :
+  forall (l : list ASGMT), 
+    (0 < (length l))
+    /\ is_function l 
+          (fun (asgmt1 asgmt2 : ASGMT)
+                => string_dec
+                     (fst asgmt1.(asgmt)).(vname)
+                     (fst asgmt2.(asgmt)).(vname)).
+
+Hypothesis variables_valid :
+  forall (I O : SVARS) (T : STIMERS) (gcvar : (NAME * TYPE)),
+    ind_rules_dfrs_variables I O T gcvar.
+
+Hypothesis states_valid :
+  forall (l : list STATE),
+    ind_rules_states l.
+
+Hypothesis dfrs_states_valid :
+  forall (s : STATE) (ss : STATES),
+    ind_rules_dfrs_states s ss.
+
+Hypothesis dfrs_trans_rel_valid :
+  forall (tr : TRANSREL),
+    ind_rules_dfrs_trans_rel tr.
+
+Hypothesis e_dfrs_valid :
+  forall (vars : DFRS_VARIABLES) (sts : DFRS_STATES) (tr : DFRS_TRANSITION_RELATION),
+    ind_rules_e_dfrs vars sts tr.
+
 Definition ranB (v : VALUE) : bool :=
   match v with
   | b _ => true
@@ -47,8 +81,8 @@ Definition blt_value (t1 t2 : VALUE) : bool :=
 Definition bne_value (t1 t2 : VALUE) : bool :=
   match t1,t2 with
   | b t1, b t2 => negb (eqb t1 t2)
-  | i t1, i t2 => negb (Z.leb t1 t2)
-  | n t1, n t2 => negb (Nat.leb t1 t2)
+  | i t1, i t2 => negb (Z.eqb t1 t2)
+  | n t1, n t2 => negb (Nat.eqb t1 t2)
   | _, _ => false
   end.
 
@@ -105,9 +139,17 @@ Fixpoint gen_asgmts_combination (ll1 ll2 : list (list ASGMT)) : list (list ASGMT
 Fixpoint static_bexps_true (l : list (NAME * VALUE)) (be : BEXP) : bool :=
   match l with
   | []      => true
-  | f :: fs => (if bstring_dec (fst f) (var_name be).(vname)
-                then (if ranB (snd f)
-                      then beq_value (snd f) be.(literal)
+  | f :: fs => if bstring_dec (fst f) (var_name be).(vname)
+               then (if ranB (snd f)
+                      then 
+                        let
+                          eq_value := beq_value (snd f) be.(literal)
+                        in
+                          match be.(op) with
+                          | eq  => eq_value
+                          | ne  => negb eq_value
+                          | _   => false
+                          end
                       else (if ranI (snd f) || ranN (snd f)
                             then match be.(op) with
                                  | le => ble_value (snd f) be.(literal)
@@ -118,9 +160,7 @@ Fixpoint static_bexps_true (l : list (NAME * VALUE)) (be : BEXP) : bool :=
                                  | ge => bge_value (snd f) be.(literal)
                                  end
                             else false))
-               else static_bexps_true fs be)
-              &&
-               static_bexps_true fs be
+               else static_bexps_true fs be
   end.
 
 Definition minus_value (v1 v2 : VALUE) : VALUE :=
@@ -135,8 +175,8 @@ Fixpoint timed_bexps_true (l : list (NAME * VALUE)) (be : BEXP)
   (gc : (NAME * (VALUE * VALUE))) : bool :=
   match l with
   | []      => true
-  | f :: fs => (if bstring_dec (fst f) (var_name be).(vname)
-                then
+  | f :: fs => if bstring_dec (fst f) (var_name be).(vname)
+               then
                   (if ranN (snd f)
                   then (match be.(op) with
                         | le => ble_value (minus_value (snd (snd gc)) 
@@ -153,35 +193,34 @@ Fixpoint timed_bexps_true (l : list (NAME * VALUE)) (be : BEXP)
                                                        (snd f)) be.(literal)
                         end)
                   else false)
-                else timed_bexps_true fs be gc)
-               &&
-                timed_bexps_true fs be gc
+               else timed_bexps_true fs be gc
   end.
 
 (** static_guards_true *)
 Fixpoint values_in_static_bexps_true (be : list BEXP) (s : STATE) : bool :=
   match be with
-  | []     => true
+  | []     => false
   | h :: t => if (match h.(v) with
                   | current _  => static_bexps_true (current_values s) h
                   | previous _ => static_bexps_true (previous_values s) h
                   end)
-              then values_in_static_bexps_true t s
-              else false
+              then true
+              else values_in_static_bexps_true t s
   end.
 
-Definition static_guards_true (s : STATE) (sGuard : EXP)
+Fixpoint static_guards_true (s : STATE) (conjs : list DISJ)
   (IO T : list (VNAME * TYPE)) : bool :=
-  let
-    bexps := union_lists (map (fun d : DISJ => d.(disjs)) sGuard.(conjs))
-  in
-  (bvar_consistent_exp sGuard IO T) && (values_in_static_bexps_true bexps s).
+  match conjs with
+  | []      => true
+  | h :: tl => (values_in_static_bexps_true h.(disjs) s)
+               && (static_guards_true s tl IO T)
+  end.
 
 (** timed_guards_true *)
 Fixpoint values_in_timed_bexps_true (be : list BEXP) (s : STATE) 
   (gc : option (NAME * (VALUE * VALUE))) : bool :=
   match be with
-  | []     => true
+  | []     => false
   | h :: t => if (match h.(v) with
                   | current _  => (match gc with
                                    | Some e => timed_bexps_true 
@@ -194,30 +233,39 @@ Fixpoint values_in_timed_bexps_true (be : list BEXP) (s : STATE)
                                    | None   => false
                                    end)
                   end)
-              then values_in_timed_bexps_true t s gc
-              else false
+              then true
+              else values_in_timed_bexps_true t s gc
   end.
 
-Definition timed_guards_true (s : STATE) (tGuard : EXP) 
+Fixpoint timed_guards_true (s : STATE) (conjs : list DISJ) 
   (T : list (VNAME * TYPE)) : bool :=
   let
-    bexps := union_lists (map (fun d : DISJ => d.(disjs)) tGuard.(conjs))
-  in
-  let
     gc := get_gc s.(state)
-  in
-  (bvar_consistent_exp tGuard T T) && (values_in_timed_bexps_true bexps s gc).
+  in  
+    match conjs with
+    | []      => true
+    | h :: tl => (values_in_timed_bexps_true h.(disjs) s gc)
+                 && (timed_guards_true s tl T)
+    end.
 
 (** is_stable *)
+Definition beq_state_element_current
+(e1 e2 : (NAME * (VALUE * VALUE))) : bool :=
+  bstring_dec (fst e1) (fst e2)
+  && beq_value (snd (snd e1)) (snd (snd e2)).
+
+Definition beq_state_current (s1 s2 : STATE) : bool :=
+  bsame_list s1.(state) s2.(state) beq_state_element_current.
+
 Fixpoint is_stable_entry (s : STATE) (IO T : list (VNAME * TYPE)) 
   (le : list (EXP * EXP * ASGMTS * REQUIREMENT)) : bool :=
   match le with
   | []     => true
-  | h :: t => if (negb (static_guards_true s (fst3 (fst h)) IO T))
+  | h :: t => if (negb (static_guards_true s (fst3 (fst h)).(conjs) IO T))
                  ||
-                  (negb (timed_guards_true s (snd3 (fst h)) T))
+                 (negb (timed_guards_true s (snd3 (fst h)).(conjs) T))
                  ||
-                  beq_state s
+                 beq_state_current s
                            (nextState s T (trd3 (fst h)))
                then is_stable_entry s IO T t
                else false
@@ -230,17 +278,6 @@ Definition is_stable (s : STATE) (IO T : list (VNAME * TYPE))
                 (map (fun f : FUNCTION => f.(function)) (union_lists F))
   in
    is_stable_entry s IO T entries.
-
-(** genTransitions *)
-Theorem asgmts_valid :
-  forall (l : list ASGMT), 
-    (0 < (length l))
-    /\ is_function l 
-          (fun (asgmt1 asgmt2 : ASGMT)
-                => string_dec
-                     (fst asgmt1.(asgmt)).(vname)
-                     (fst asgmt2.(asgmt)).(vname)).
-Admitted.
 
 Fixpoint make_trans_del (s : STATE) (I T : list (VNAME * TYPE))
   (a : list (list ASGMT)) : list TRANS :=
@@ -264,12 +301,18 @@ Fixpoint make_trans_func (s : STATE) (IO T : list (VNAME * TYPE))
   (le : list (EXP * EXP * ASGMTS * REQUIREMENT)) : list TRANS :=
   match le with
   | []     => []
-  | h :: t => if static_guards_true s (fst3 (fst h)) IO T
+  | h :: t => if static_guards_true s (fst3 (fst h)).(conjs) IO T
                 &&
-                 timed_guards_true s (snd3 (fst h)) T
-              then (mkTRANS (s, (func (trd3 (fst h), snd h)),
+                 timed_guards_true s (snd3 (fst h)).(conjs) T
+              then 
+                ( if beq_state_current s (nextState s T (trd3 (fst h)))
+                  then
+                    make_trans_func s IO T t
+                  else
+                   (mkTRANS (s, (func (trd3 (fst h), snd h)),
                             nextState s T (trd3 (fst h))))
                    :: make_trans_func s IO T t
+                )
               else make_trans_func s IO T t
   end.
 
@@ -334,7 +377,6 @@ Definition call_buildTR (toVisit visited : list STATE)
 
 (* S to E *)
 
-(* TODO: REVIEW *)
 Fixpoint removeDuplicateStates (l : list STATE) : list STATE :=
   match l with
   | []     => []
@@ -343,32 +385,6 @@ Fixpoint removeDuplicateStates (l : list STATE) : list STATE :=
               else h :: removeDuplicateStates t
   end.
 
-Theorem variables_valid :
-  forall (I O : SVARS) (T : STIMERS) (gcvar : (NAME * TYPE)),
-    ind_rules_dfrs_variables I O T gcvar.
-Admitted.
-
-Theorem states_valid :
-  forall (l : list STATE),
-    ind_rules_states l.
-Admitted.
-
-Theorem dfrs_states_valid :
-  forall (s : STATE) (ss : STATES),
-    ind_rules_dfrs_states s ss.
-Admitted.
-
-Theorem dfrs_trans_rel_valid :
-  forall (tr : TRANSREL),
-    ind_rules_dfrs_trans_rel tr.
-Admitted.
-
-Theorem e_dfrs_valid :
-  forall (vars : DFRS_VARIABLES) (sts : DFRS_STATES) (tr : DFRS_TRANSITION_RELATION),
-    ind_rules_e_dfrs vars sts tr.
-Admitted.
-
-(* TODO: TRANSREL could have loops? *)
 Definition expandedDFRS (sdfrs : s_DFRS) (limiter : nat)
   (possibilities : list (VNAME * list VALUE)) : e_DFRS :=
   let
@@ -416,5 +432,3 @@ Definition expandedDFRS (sdfrs : s_DFRS) (limiter : nat)
       dfrs_states (* States *)
       dfrs_tr (* TRs *)
       (e_dfrs_valid dfrs_variables dfrs_states dfrs_tr).
-
-

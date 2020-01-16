@@ -22,5 +22,8 @@ e_dfrs/e_dfrs.v
 e_dfrs/e_dfrs_fun_rules.v
 e_dfrs/e_dfrs_fun_ind_equiv.v
 s2e_dfrs/s2e_dfrs_fun_rules.v
+s2e_dfrs/properties.v
 examples/vm/vm_tests.v
+examples/npp/npp_tests.v
+examples/tis/tis_tests.v
 quickchick/qc_instances.v

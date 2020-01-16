@@ -70,16 +70,16 @@ Definition well_typed_var
                 /\ (is_valid_value (snd (snd p)) t)
     end.
 
-Fixpoint well_typed_state_var (s:STATE)
-(l: list (NAME * TYPE)) : Prop :=
+Fixpoint well_typed_state_var 
+(s:STATE) (l: list (NAME * TYPE)) : Prop :=
     match l with
     | []     => True
     | h :: t => well_typed_var s (fst h) (snd h)
                 /\ well_typed_state_var s t
     end.
 
-Definition well_typed_state (s : STATE)
-(l : list (NAME * TYPE)) : Prop :=
+Definition well_typed_state 
+(s : STATE) (l : list (NAME * TYPE)) : Prop :=
   let dom_s := map (fun x => fst x) s.(state) in
   let dom_l := map (fun x => fst x) l in
     same_list dom_s dom_l string_dec
@@ -91,7 +91,8 @@ Definition eq_state_element
   /\ eq_value (fst (snd e1)) (fst (snd e2))
   /\ eq_value (snd (snd e1)) (snd (snd e2)).
 
-Fixpoint eq_state_elements (s1 s2 : list (NAME * (VALUE * VALUE))) : Prop :=
+Fixpoint eq_state_elements 
+(s1 s2 : list (NAME * (VALUE * VALUE))) : Prop :=
   match s1, s2 with
   | []      , []       => True
   | []      , _        => False

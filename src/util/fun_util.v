@@ -5,7 +5,6 @@ Import ListNotations.
 Definition bstring_dec (s1 s2 : string) : bool :=
   if string_dec s1 s2 then true else false.
 
-(* Not used *)
 Fixpoint ball_true {T : Type} (f : T -> bool) (l : list T) : bool :=
   match l with
   | []      => true
@@ -42,35 +41,3 @@ Fixpoint bis_function {T : Type} (l : list T)
   | h :: t => if bin_list h t comp then false
               else bis_function t comp
   end.
-
-(*
-Definition optionValue {X:Type} (v : option X) (d : X) : X :=
-  match v with
-  | None   => d
-  | Some h => h
-  end.
-
-Definition getHeadLL {X : Type} (l : list (list X)) : list X :=
-  match l with
-  | []     => []
-  | h :: t => h
-  end.
-
-Definition getTailLL {X : Type} (l : list (list X)) : list (list X) :=
-  match l with
-  | []     => []
-  | h :: t => t
-  end.
-
-Definition fst_ll {X : Type} (l : list (list X)) : list X :=
-  match l with
-  | [] => []
-  | h :: t => h
-  end.
-  
-Definition snd_ll {X : Type} (l : list (list X)) : list X :=
-  match l with
-  | [] => []
-  | h :: t => fst_ll t
-  end.
-*)

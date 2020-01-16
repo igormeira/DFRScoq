@@ -22,7 +22,8 @@ Inductive OP : Type :=
   | gt : OP
   | ge : OP.
   
-Definition is_valid_op (op : OP) (v : VALUE) : Prop :=
+Definition is_valid_op 
+(op : OP) (v : VALUE) : Prop :=
   match op with
   | le | lt | gt | ge => match v with
                          | b _ => False
@@ -68,8 +69,8 @@ Fixpoint find_var_declaration (v : VNAME)
                 else find_var_declaration v t
     end.
 
-Definition var_consistent_be (be : BEXP)
-  (f T : list (VNAME * TYPE)) : Prop :=
+Definition var_consistent_be 
+(be : BEXP) (f T : list (VNAME * TYPE)) : Prop :=
     let n := var_name be in
     let value := be.(literal) in
     let op := be.(op) in
@@ -89,23 +90,25 @@ Definition var_consistent_be (be : BEXP)
               end
          else True.
          
-Definition var_consistent_dis (dis : DISJ)
-  (f T : list (VNAME * TYPE)) : Prop :=
-    fold_left and
-      (map (fun be => var_consistent_be be f T)
-           dis.(disjs))
-      True.
+Fixpoint var_consistent_dis
+(disjs : list BEXP) (f T : list (VNAME * TYPE)) : Prop :=
+  match disjs with
+  | []      => True
+  | h :: tl => var_consistent_be h f T
+               /\ var_consistent_dis tl f T
+  end. 
 
-Definition var_consistent_conj (con : CONJ)
-  (f T : list (VNAME * TYPE)) : Prop :=
-    fold_left and
-      (map (fun dis => var_consistent_dis dis f T)
-           con.(conjs))
-      True.
-
-Definition var_consistent_exp (exp : EXP)
-  (f T : list (VNAME * TYPE)) : Prop :=
-    var_consistent_conj exp f T.
+Fixpoint var_consistent_conj 
+  (conjs : list DISJ) (f T : list (VNAME * TYPE)) : Prop :=
+  match conjs with
+  | []      => True
+  | h :: tl => var_consistent_dis h.(disjs) f T
+               /\ var_consistent_conj tl f T
+  end.
+  
+Definition var_consistent_exp 
+  (exp : EXP) (f T : list (VNAME * TYPE)) : Prop :=
+    var_consistent_conj exp.(conjs) f T.
 
 (* ASSIGNMENT *)
 Record ASGMT : Set := mkASGMT {
@@ -126,8 +129,8 @@ Record ASGMTS : Set := mkASGMTS {
   ; rules_asgmts : ind_rules_asgmts asgmts
 }.
 
-Fixpoint is_valid_asgmts_names (la : list ASGMT)
-  (ln : list VNAME) : Prop :=
+Fixpoint is_valid_asgmts_names 
+  (la : list ASGMT) (ln : list VNAME) : Prop :=
     match la with
     | [] => True
     | h :: t =>
@@ -136,41 +139,45 @@ Fixpoint is_valid_asgmts_names (la : list ASGMT)
         /\ is_valid_asgmts_names t ln
     end.
 
-Definition well_typed_asgmts (a : ASGMTS)
-  (f : list (VNAME * TYPE)) : Prop :=
-    is_valid_asgmts_names a.(asgmts)
-                          (map (fun x => fst x) f)
-    /\ fold_left and
-        (map (fun a => let var :=
-                          find_var_declaration
-                            (fst a.(asgmt)) f
-                       in match var with
-                          | None   => False
-                          | Some p =>
-                              is_valid_value 
-                                (snd a.(asgmt))
+Fixpoint well_typed_asgmts 
+  (la : list ASGMT) (f : list (VNAME * TYPE)) : Prop :=
+    is_valid_asgmts_names la (map (fun x => fst x) f)
+    /\ 
+    (
+      match la with
+      | []      => True
+      | h :: tl => (let 
+                      var := find_var_declaration (fst h.(asgmt)) f
+                    in 
+                    match var with
+                    | None   => False
+                    | Some p => is_valid_value 
+                                (snd h.(asgmt))
                                 (snd p)
-                       end) a.(asgmts))
-         True.
+                    end
+                   ) /\ well_typed_asgmts tl f
+      end
+    ).
 
 (* FUNCTION *)
 Definition REQUIREMENT := string.
 
-Definition ind_rules_function
-  (l : list (EXP * EXP * ASGMTS * REQUIREMENT) )
-  : Prop :=
-    fold_left and
-      (map
-        (fun entry => 
-          let sGuard := (fst (fst (fst entry))) in
-          let tGuard := (snd (fst (fst entry))) in
-            0 < List.length
-                  (sGuard.(conjs) ++ tGuard.(conjs)))
-        l) True.
+Fixpoint ind_rules_function
+  (l : list (EXP * EXP * ASGMTS * REQUIREMENT) ) : Prop :=
+    match l with
+    | []      => True
+    | h :: tl => (let
+                    sGuard := (fst (fst (fst h)))
+                  in
+                  let
+                    tGuard := (snd (fst (fst h)))
+                  in
+                  0 < List.length (sGuard.(conjs) ++ tGuard.(conjs))
+                 ) /\ ind_rules_function tl
+    end.
 
 Record FUNCTION : Set := mkFUNCTION {
   function : list (EXP * EXP * ASGMTS * REQUIREMENT) ;
-  
   rules_function : ind_rules_function function
 }.
 

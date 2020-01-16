@@ -25,9 +25,12 @@ Require Import e_dfrs.
 Require Import s2e_dfrs_fun_rules.
 
 Require Import vm_tests.
+Require Import npp_tests.
+Require Import tis_tests.
 
 Open Scope monad_scope.
 
+Local Open Scope string.
 (*=============== NAT ================*)
 
 Fixpoint string_of_nat_aux (time n : nat) (acc : string) : string :=
@@ -283,10 +286,7 @@ Fixpoint possible_labels (st : STATE) (l : list TRANS) : list TRANS_LABEL :=
               then (snd3 h.(STS)) :: possible_labels st t
               else possible_labels st t
   end.
-  
-Check elements.
 
-(* TODO: elements x elems x elems_ *)
 Definition Asgmt_qc1 : ASGMT.
 Proof.
   apply (mkASGMT (the_coin_sensor, (b false))).
@@ -366,180 +366,111 @@ Fixpoint in_list_rq (rq : REQUIREMENT) (l : list TRANS_LABEL) : bool :=
 
 (*=============== VM ================*)
 
-Definition initial_state := vm_state.
+Definition vm_initial_state := VM_state.
 
 Definition vm_possibilities := [(the_coin_sensor, [b false; b true]);
                                 (the_coffee_request_button, [b false; b true])].
 
 (*=============== END VM ================*)
 
-(*
+(*=============== NPP ================*)
 
-(*=============== TRACE VM_REQ005 ================*)
+Definition npp_initial_state := npp_state.
 
-Definition asgmt_coin_true : ASGMT.
-Proof.
-  apply (mkASGMT (the_coin_sensor, (b true))).
-Defined.
+Definition npp_possibilities := [(the_reset_button, [b false; b true]);
+                                 (the_blockage_button, [b false; b true]);
+                                 (the_water_pressure, [i 0; i 1; i 8; i 9; i 10; i 11])].
 
-Definition asgmt_coin_false : ASGMT.
-Proof.
-  apply (mkASGMT (the_coin_sensor, (b false))).
-Defined.
+(*=============== END VM TRACE ================*)
 
-Definition asgmt_coffee_true : ASGMT.
-Proof.
-  apply (mkASGMT (the_coffee_request_button, (b true))).
-Defined.
+(*=============== TIS ================*)
 
-Definition asgmt_coffee_false : ASGMT.
-Proof.
-  apply (mkASGMT (the_coffee_request_button, (b false))).
-Defined.
+Definition tis_initial_state := tis_state.
 
-Definition asgmts1 : ASGMTS.
-Proof.
-  apply (mkASGMTS [asgmt_coin_true ; asgmt_coffee_false]).
-  apply theo_rules_asgmts. reflexivity.
-Defined.
+Definition tis_possibilities := [(the_voltage, [i 0; i 1; i 79;i 80; i 81; i 82]);
+                                (the_turn_indicator_lever, [i 0; i 1; i 2; i 3]);
+                                (the_emergency_flashing, [i 0; i 1; i 2])].
 
-Definition asgmts2 : ASGMTS.
-Proof.
-  apply (mkASGMTS [asgmt_coin_false ; asgmt_coffee_true]).
-  apply theo_rules_asgmts. reflexivity.
-Defined.
+(*=============== END TIS ================*)
 
-Definition asgmts3 : ASGMTS.
-Proof.
-  apply (mkASGMTS [asgmt_coin_false ; asgmt_coffee_false]).
-  apply theo_rules_asgmts. reflexivity.
-Defined.
+Inductive test_purpose_step : Type :=
+  | any_values : test_purpose_step
+  | match_values : list (NAME * VALUE) -> test_purpose_step.
 
-Definition del1 : TRANS_LABEL := del ((discrete 1), asgmts1).
-Definition del2 : TRANS_LABEL := del ((discrete 1), asgmts2).
-Definition del3 : TRANS_LABEL := del ((discrete 1), asgmts3).
+Definition test_purpose := list test_purpose_step.
 
-Definition idle_del : STATE :=
-  let
-    tr := (genTransitions vm_s_dfrs.(s_dfrs_initial_state).(s0)
-            vm_s_dfrs.(s_dfrs_variables).(I).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(O).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(T).(stimers)
-            [vm_s_dfrs.(s_dfrs_functions).(F)]
-            vm_possibilities).(transrel)
-  in
-    nextState vm_s_dfrs.(s_dfrs_initial_state).(s0) del1 tr.
-
-(* Compute (show idle_del). *)
-
-Definition dummy_trans : TRANS := mkTRANS (idle_del, del1, idle_del).
-
-Definition choice : STATE :=
-  let
-    tr := (genTransitions idle_del
-            vm_s_dfrs.(s_dfrs_variables).(I).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(O).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(T).(stimers)
-            [vm_s_dfrs.(s_dfrs_functions).(F)]
-            vm_possibilities).(transrel)
-  in
-  let
-    fun_label := snd3 (hd dummy_trans tr).(STS)
-  in    
-    nextState idle_del fun_label tr.
-
-(* Compute (show choice). *)
-
-Fixpoint advance_time (s : STATE) (n : nat) : STATE :=
-  match n with
-  | 0     => s
-  | S n'  => 
-        let
-          tr := (genTransitions s
-                  vm_s_dfrs.(s_dfrs_variables).(I).(svars)
-                  vm_s_dfrs.(s_dfrs_variables).(O).(svars)
-                  vm_s_dfrs.(s_dfrs_variables).(T).(stimers)
-                  [vm_s_dfrs.(s_dfrs_functions).(F)]
-                  vm_possibilities).(transrel)
-        in
-          advance_time (nextState s del3 tr) n'
+Fixpoint get_variable_value
+  (s_values : list (NAME * VALUE)) (n : NAME) : option VALUE :=
+  match s_values with
+  | []            => None
+  | (n',v) :: tl  => if bstring_dec n' n then Some v
+                     else get_variable_value tl n
   end.
 
-Definition choice_del : STATE := advance_time choice 30.
+Fixpoint match_state_values_aux
+  (s_values : list (NAME * VALUE))
+  (values : list (NAME * VALUE)) : bool :=
+  match values with
+  | []              => true
+  | (name,v) :: tl  => match get_variable_value s_values name with
+                       | None     => false
+                       | Some v'  => beq_value v v'
+                       end
+  end.
 
-(* Compute (show choice_del). *)
+Definition match_state_values (s : STATE) (values : list (NAME * VALUE)) : bool :=
+  let s_values := map (fun (x : (NAME * (VALUE * VALUE)))
+                            => (fst x, snd (snd x))) s.(state) in
+  match_state_values_aux s_values values.
 
-Definition choice_del' : STATE :=
-  let
-    tr := (genTransitions choice_del
-            vm_s_dfrs.(s_dfrs_variables).(I).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(O).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(T).(stimers)
-            [vm_s_dfrs.(s_dfrs_functions).(F)]
-            vm_possibilities).(transrel)
-  in
-    nextState choice_del del2 tr.
+Definition get_fst_asgmts (t : trace) : ASGMTS :=
+  match t with
+  | []      => default_asgmts
+  | h :: tl => match h with
+               | func (a,r) => a
+               | del (d,a)  => a
+               end
+  end.
+  
+Fixpoint next_match_values (tp : test_purpose) : option (list (NAME * VALUE)) :=
+  match tp with
+  | []            => None
+  | tp_h :: tp_tl => match tp_h with
+                     | any_values          => next_match_values tp_tl
+                     | match_values values => Some values
+                     end
+  end.
+  
+Fixpoint values_tl (tp : test_purpose) : test_purpose :=
+  match tp with
+  | []            => []
+  | tp_h :: tp_tl => match tp_h with
+                     | any_values     => values_tl tp_tl
+                     | match_values _ => tp_tl
+                     end
+  end.
 
-(* Compute (show choice_del'). *)
+Fixpoint match_purpose_trace (sdfrs : s_DFRS) (s : STATE)
+  (t : trace) (tp : test_purpose) (size : nat) : bool :=
+  let T := sdfrs.(s_dfrs_variables).(T).(stimers) in
+  let s' := e_dfrs.nextState s T (get_fst_asgmts t) in
+  match tp,size with
+  | [], _                  => true
+  | _, 0                   => false
+  | tp_h :: tp_tl, S size' =>
+      match tp_h with
+      | any_values          => 
+          let next_values := next_match_values tp_tl in
+          match next_values with
+          | None        => true
+          | Some values => if match_state_values s' values
+                           then match_purpose_trace sdfrs s' (List.tl t) (values_tl tp_tl) size'
+                           else match_purpose_trace sdfrs s' (List.tl t) tp size'
+           end
+      | match_values values => if match_state_values s' values
+                               then match_purpose_trace sdfrs s' (List.tl t) tp_tl size'
+                               else false
+      end
+  end.
 
-Definition strong : STATE :=
-  let
-    tr := (genTransitions choice_del'
-            vm_s_dfrs.(s_dfrs_variables).(I).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(O).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(T).(stimers)
-            [vm_s_dfrs.(s_dfrs_functions).(F)]
-            vm_possibilities).(transrel)
-  in
-  let
-    fun_label := snd3 (hd dummy_trans tr).(STS)
-  in    
-    nextState choice_del' fun_label tr.
-
-(* Compute (show strong). *)
-
-Definition strong_del : STATE := advance_time strong 30.
-
-(* Compute (show strong_del). *)
-
-(* Compute ((genTransitions strong_del
-            vm_s_dfrs.(s_dfrs_variables).(I).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(O).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(T).(stimers)
-            [vm_s_dfrs.(s_dfrs_functions).(F)]
-            vm_possibilities).(transrel)). *)
-
-Definition produce_strong : STATE :=
-  let
-    tr := (genTransitions strong_del
-            vm_s_dfrs.(s_dfrs_variables).(I).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(O).(svars)
-            vm_s_dfrs.(s_dfrs_variables).(T).(stimers)
-            [vm_s_dfrs.(s_dfrs_functions).(F)]
-            vm_possibilities).(transrel)
-  in
-  let
-    fun_label := snd3 (hd dummy_trans tr).(STS)
-  in    
-    nextState strong_del fun_label tr.
-
-(* Compute (show produce_strong). *)
-
-(* TODO: refletir sobre modificar o genValidTrace para
-  ao gerar um trace que cont\u00e9m o label do requisito de interesse
-  j\u00e1 parar de gerar traces. Contudo, ao gerar v\u00e1rios contraexemplos
-  para um certo requisito, pode ser que tenhamos um trace
-  onde o label de interesse ocorra mais de uma vez. *)
-
-(* TODO: timeout, tentar com nova abordagem
-QuickChick (forAll (genValidTrace
-                    (initial_state)
-                    (trans 10000) 
-                    5000) 
-                   test_exist_func5).
-*)
-
-
-*)
-
-
+Local Close Scope string.

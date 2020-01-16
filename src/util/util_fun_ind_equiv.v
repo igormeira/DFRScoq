@@ -57,7 +57,91 @@ Proof.
     + simpl. intro H'. destruct (bcomp x a) eqn:H''.
       * left. apply H in H''. apply H''.
       * right. apply IHl. apply H'.
-Qed.  
+Qed.
+
+Theorem lemm_list_in_list :
+  forall (T : Type) (l1 l2 : list T)
+         (comp : T -> T -> Prop)
+         (bcomp : T -> T -> bool),
+    (forall (v1 v2 : T), comp v1 v2 <-> bcomp v1 v2 = true)
+    -> (list_in_list l1 l2 comp <-> blist_in_list l1 l2 bcomp = true).
+Proof.
+  intros. split.
+  - induction l1.
+    + simpl. intros. reflexivity.
+    + intro H1. simpl in H1. destruct H1 as [H1 H2].
+      simpl. rewrite lemm_in_list in H1. rewrite H1.
+      * apply IHl1. apply H2.
+      * apply H.
+  - induction l1.
+    + simpl. intros. reflexivity.
+    + intro H1. simpl in H1. simpl. split.
+      destruct (bin_list a l2 bcomp) eqn:H2.
+      * rewrite lemm_in_list.
+        { apply H2. }
+        { apply H. }
+      * inversion H1.
+      * apply IHl1. destruct (bin_list a l2 bcomp) eqn:H2.
+        { apply H1. }
+        { inversion H1. }
+Qed.
+
+Theorem lemm_same_list :
+  forall (T : Type) (l1 l2 : list T)
+         (comp : T -> T -> Prop)
+         (bcomp : T -> T -> bool),
+    (forall (v1 v2 : T), comp v1 v2 <-> bcomp v1 v2 = true)
+    -> (same_list l1 l2 comp <-> bsame_list l1 l2 bcomp = true).
+Proof.
+  intros. split.
+  - induction l1.
+    + simpl. intro H'. destruct H'.
+      * rewrite lemm_list_in_list in H1.
+        { rewrite H1. reflexivity. }
+        { intros. apply H. }
+    + simpl. intro H'. destruct H'. destruct H0.
+      rewrite lemm_list_in_list in H2.
+      rewrite lemm_in_list in H0.
+      * rewrite H0. rewrite H2. rewrite lemm_list_in_list in H1.
+        { rewrite H1. reflexivity. }
+        { apply H. }
+      * apply H.
+      * apply H.
+  - induction l1.
+    + simpl. intro. split.
+      * reflexivity.
+      * rewrite lemm_list_in_list. rewrite H0. reflexivity.
+        apply H.
+    + simpl. intro. split.
+      * split.
+        { destruct (bin_list a l2 bcomp) eqn:H1.
+          - rewrite lemm_in_list. rewrite H1. reflexivity.
+            + apply H.
+          - rewrite lemm_in_list. simpl in H0. inversion H0.
+            + apply H. }
+        { destruct (blist_in_list l1 l2 bcomp) eqn:H1.
+          - destruct (bin_list a l2 bcomp).
+            + rewrite lemm_list_in_list. 
+              * rewrite H1. reflexivity.
+              * apply H.
+            + rewrite lemm_list_in_list. 
+              * rewrite H1. reflexivity.
+              * apply H.
+          - destruct (bin_list a l2 bcomp).
+            + simpl in H0. inversion H0.
+            + simpl in H0. inversion H0. }
+      * destruct (blist_in_list l2 (a :: l1) bcomp) eqn:H1.
+        { destruct (bin_list a l2 bcomp).
+          - rewrite lemm_list_in_list.
+            + rewrite H1. reflexivity.
+            + apply H.
+          - simpl in H0. inversion H0. }
+        { destruct (bin_list a l2 bcomp).
+          - destruct (blist_in_list l1 l2 bcomp).
+            + simpl in H0. inversion H0.
+            + simpl in H0. inversion H0.
+          - simpl in H0. inversion H0. }
+Qed.
 
 Theorem theo_is_function :
   forall (T : Type) (l : list T)

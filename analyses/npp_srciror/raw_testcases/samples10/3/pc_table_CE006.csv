@@ -1,0 +1,16 @@
+Time,The_Left_Command,The_Left_Priority_Button,The_Right_Command,The_Right_Priority_Button,The_Command_In_Control_Output
+0,false,false,false,false,3
+1,true,true,true,false,4
+2,false,false,true,true,5
+3,false,false,true,true,5
+4,true,false,true,false,0
+5,false,false,true,false,1
+6,true,true,false,false,4
+7,true,true,true,true,4
+8,false,true,true,true,4
+9,true,false,true,true,5
+10,true,true,true,false,4
+11,false,true,false,false,4
+12,true,false,false,true,5
+13,false,true,true,true,5
+14,false,false,false,true,5

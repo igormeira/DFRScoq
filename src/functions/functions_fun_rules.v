@@ -44,23 +44,25 @@ Definition bvar_consistent_be (be : BEXP)
               end
          else true.
          
-Definition bvar_consistent_dis (dis : DISJ)
-  (f T : list (VNAME * TYPE)) : bool :=
-    fold_left andb
-      (map (fun be => bvar_consistent_be be f T)
-           dis.(disjs))
-      true.
+Fixpoint bvar_consistent_dis
+(disjs : list BEXP) (f T : list (VNAME * TYPE)) : bool :=
+  match disjs with
+  | []      => true
+  | h :: tl => bvar_consistent_be h f T
+               && bvar_consistent_dis tl f T
+  end.
 
-Definition bvar_consistent_conj (con : CONJ)
+Fixpoint bvar_consistent_conj (conjs : list DISJ)
   (f T : list (VNAME * TYPE)) : bool :=
-    fold_left andb
-      (map (fun dis => bvar_consistent_dis dis f T)
-           con.(conjs))
-      true.
+  match conjs with
+  | []      => true
+  | h :: tl => bvar_consistent_dis h.(disjs) f T
+               && bvar_consistent_conj tl f T
+  end.
 
 Definition bvar_consistent_exp (exp : EXP)
   (f T : list (VNAME * TYPE)) : bool :=
-    bvar_consistent_conj exp f T.
+    bvar_consistent_conj exp.(conjs) f T.
 
 (* ASSIGNMENT *)
 Definition fun_rules_asgmts (l : list ASGMT) : bool :=
@@ -71,8 +73,8 @@ Definition fun_rules_asgmts (l : list ASGMT) : bool :=
                    (fst asgmt1.(asgmt)).(vname)
                    (fst asgmt2.(asgmt)).(vname)).
 
-Fixpoint bis_valid_asgmts_names (la : list ASGMT)
-  (ln : list VNAME) : bool :=
+Fixpoint bis_valid_asgmts_names 
+  (la : list ASGMT) (ln : list VNAME) : bool :=
     match la with
     | [] => true
     | h :: t =>
@@ -81,35 +83,43 @@ Fixpoint bis_valid_asgmts_names (la : list ASGMT)
         && bis_valid_asgmts_names t ln
     end.
 
-Definition bwell_typed_asgmts (a : ASGMTS)
-  (f : list (VNAME * TYPE)) : bool :=
-    bis_valid_asgmts_names a.(asgmts)
-                          (map (fun x => fst x) f)
-    && fold_left andb
-        (map (fun a => let var :=
-                          find_var_declaration
-                            (fst a.(asgmt)) f
-                       in match var with
-                          | None   => false
-                          | Some p =>
-                              bis_valid_value 
-                                (snd a.(asgmt))
-                                (snd p)
-                       end) a.(asgmts))
-         true.
+Fixpoint bwell_typed_asgmts 
+  (la : list ASGMT) (f : list (VNAME * TYPE)) : bool :=
+    bis_valid_asgmts_names la (map (fun x => fst x) f)
+    && 
+    (
+      match la with
+      | []      => true
+      | h :: tl => (let 
+                      var := find_var_declaration (fst h.(asgmt)) f
+                    in 
+                     match var with
+                     | None   => false
+                     | Some p =>
+                         bis_valid_value 
+                           (snd h.(asgmt))
+                           (snd p)
+                     end
+                   ) && bwell_typed_asgmts tl f
+      end
+    ).
 
 (* FUNCTION *)
-Definition fun_rules_function
-  (l : list (EXP * EXP * ASGMTS * REQUIREMENT) )
-  : bool :=
-    fold_left andb
-      (map
-        (fun entry => 
-          let sGuard := (fst (fst (fst entry))) in
-          let tGuard := (snd (fst (fst entry))) in
-            0 <? List.length
-                  (sGuard.(conjs) ++ tGuard.(conjs)))
-        l) true.
+Fixpoint fun_rules_function
+  (l : list (EXP * EXP * ASGMTS * REQUIREMENT) ) : bool :=
+    match l with
+    | []      => true
+    | h :: tl => (
+                  let
+                    sGuard := (fst (fst (fst h)))
+                  in
+                  let
+                    tGuard := (snd (fst (fst h)))
+                  in
+                  0 <? List.length
+                  (sGuard.(conjs) ++ tGuard.(conjs))
+                 ) && fun_rules_function tl
+    end.
 
 Definition fun_rules_dfrs_functions
   (lf : list FUNCTION) : bool :=

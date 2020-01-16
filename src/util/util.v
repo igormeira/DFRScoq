@@ -5,7 +5,6 @@ Import ListNotations.
 Definition string_dec (s1 s2 : string) : Prop :=
   if string_dec s1 s2 then True else False.
 
-(* Not used *)
 Fixpoint all_true {T : Type} (f : T -> Prop) (l : list T): Prop :=
   match l with
   | []      => True
