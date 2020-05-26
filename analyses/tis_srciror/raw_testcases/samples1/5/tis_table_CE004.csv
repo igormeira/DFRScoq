@@ -1,0 +1,7 @@
+Time,I: the_voltage,I: the_turn_indicator_lever,I: the_emergency_flashing,O: the_indication_lights,O: the_flashing_mode,O: the_flashing_timer
+0,0,0,0,2,2,0
+1,80,3,1,2,0,0
+2,79,0,2,2,0,0
+3,1,3,1,2,0,0
+4,80,1,1,2,1,0
+5,1,2,0,2,3,0
