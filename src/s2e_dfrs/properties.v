@@ -7,6 +7,22 @@ Require Import s_dfrs.
 Require Import e_dfrs.
 Require Import s2e_dfrs_fun_rules.
 
+Fixpoint reached_state (sdfrs : s_DFRS) (s : STATE) (trace : list TRANS_LABEL) : STATE :=
+  match trace with
+  | []      => s
+  | h :: tl => let T := sdfrs.(s_dfrs_variables).(T) in
+               match h with
+               | func (a, req) => reached_state sdfrs
+                                    (nextState s T.(stimers) a) tl
+               | del (d, a)    => reached_state sdfrs
+                                    (nextState s T.(stimers) a) tl
+               end
+  end.
+
+Definition reachable_state (sdfrs : s_DFRS) (s : STATE) : Prop :=
+  exists (trace : list TRANS_LABEL),
+    reached_state sdfrs sdfrs.(s_dfrs_initial_state).(s0) trace = s.
+
 Fixpoint reached_func_state (sdfrs : s_DFRS) (s : STATE) (trace : list TRANS_LABEL) : STATE :=
   match trace with
   | []      => s
@@ -61,6 +77,7 @@ Definition deterministic (sdfrs: s_DFRS) : Prop :=
   forall (s : STATE) (t1 t2 : list TRANS_LABEL),
     let s1 := reached_func_state sdfrs s t1 in
     let s2 := reached_func_state sdfrs s t2 in
+    reachable_state sdfrs s /\
     ind_func_trace sdfrs s t1 /\ ind_func_trace sdfrs s t2 /\
     (is_stable s1 (List.app I O) T [F]) = true /\
     (is_stable s2 (List.app I O) T [F]) = true
@@ -88,4 +105,4 @@ Fixpoint count_occ_states (l : list STATE) (s : STATE) : nat :=
 Definition no_time_lock (sdfrs : s_DFRS) : Prop :=
   forall (s : STATE) (t : list TRANS_LABEL),
     let S := visited_func_states sdfrs s t in
-    ind_func_trace sdfrs s t -> count_occ_states S s = 1.
+    reachable_state sdfrs s /\ ind_func_trace sdfrs s t -> count_occ_states S s = 1.
