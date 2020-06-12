@@ -1,0 +1,6 @@
+# Auxiliary files created when compiling Coq code
+*.aux
+*.glob
+*.vo
+*.vok
+*.vos
