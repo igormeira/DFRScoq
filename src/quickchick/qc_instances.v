@@ -254,6 +254,8 @@ Instance showTransrel : Show TRANSREL :=
     show := string_of_transrel
   }.
 
+Local Close Scope string.
+
 (*=============== END TRANSREL ================*)
 
 Fixpoint getStateLabels (s : STATE) (lt : list TRANS) : list TRANS_LABEL :=
